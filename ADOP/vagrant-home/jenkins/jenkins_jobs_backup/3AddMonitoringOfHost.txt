@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# ADOP sets TLS vars for docker
+unset DOCKER_TLS_VERIFY
+unset DOCKER_CERT_PATH
+
+
+cd "/root/vagrant-home"
+bash start-sensu-client.sh "$hostPublicIp"
+
+
+set

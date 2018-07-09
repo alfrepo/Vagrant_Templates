@@ -1,0 +1,24 @@
+{
+  "checks": {
+    "Core_Version": {
+      "command": "curl -s ftp://:::fakturaip:::/deploytosystem_120_showInstalledVersion.cache | grep CORE.xml -A 4 | grep Versionnumber | sed -r 's/^.{12}//'",
+      "handlers": [
+        "mailer"
+      ],
+      "subscribers": [
+        "faktura"
+      ],
+      "interval": 20
+    },
+	"Core_Build-Date": {
+      "command": "curl -s ftp://:::fakturaip:::/deploytosystem_120_showInstalledVersion.cache | grep CORE.xml -A 4 | grep Build-Date | sed -r 's/^.{12}//'",
+      "handlers": [
+        "mailer"
+      ],
+      "subscribers": [
+        "faktura"
+      ],
+      "interval": 20
+    }
+  }
+}

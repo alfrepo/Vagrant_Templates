@@ -1,0 +1,165 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# The project to control the maschiene in the cloud via Ansible.
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+	# The most common configuration options are documented and commented below.
+	# For a complete reference, please see the online documentation at
+	# https://docs.vagrantup.com.
+
+	# Every Vagrant development environment requires a box. You can search for
+	# boxes at https://vagrantcloud.com/search.
+	config.vm.box = "geerlingguy/ubuntu1604"
+
+
+	# memory increase
+	config.vm.provider "virtualbox" do |v|
+		v.name = "idea-ide-machine"
+        v.memory = 8964
+        v.cpus = 4
+		# Display the VirtualBox GUI when booting the machine
+		v.gui = true
+		# enable shared clipboard
+		v.customize ['modifyvm', :id, '--clipboard', 'bidirectional'] 
+    end
+	
+	# set the ip
+	config.vm.network :private_network, ip: "10.0.0.13"
+	
+	# forward ports
+	config.vm.network :forwarded_port, guest: 8080, host: 8080 
+					  
+	PATH_VAGRANT_PROJECT=File.dirname(__FILE__)
+	
+
+
+	
+	
+	###############
+	#####  LOCAL PROVISIONERS INSTEAD OF DOWNLOAD
+		  
+	# Use shell script to provision
+	config.vm.provision "shell", inline: <<-SHELL
+			
+	
+		# update
+		apt-get update	
+		
+
+		# switch to German keyboard layout
+		sudo sed -i 's/"us"/"de"/g' /etc/default/keyboard
+		sudo DEBIAN_FRONTEND=noninteractive apt-get install -y console-common
+		sudo install-keymap de		
+		
+		
+		# install node & js tools
+		sudo apt-get install -y nodejs
+
+		
+		# setup a root & vagrant users common script 
+		touch /home/call-in-bashrc.sh
+		chmod 777 /home/call-in-bashrc.sh
+		sudo echo "source /home/call-in-bashrc.sh" >> /home/vagrant/.bashrc
+		sudo echo "source /home/call-in-bashrc.sh" >> /root/.bashrc
+		
+		# install command "add-apt-repository"
+		sudo apt install -y software-properties-common
+		
+		
+		# java	
+		echo "\n----- Installing Java  ------\n"
+		sudo add-apt-repository ppa:openjdk-r/ppa -y
+		sudo add-apt-repository ppa:webupd8team/java -y
+		apt-get update
+		
+		# install java8 for the idea idea. It does not work good with java9
+		apt-get -y install openjdk-8-jdk
+		
+		# install java9 oracle jdk for the application
+		echo "oracle-java9-installer shared/accepted-oracle-license-v1-1 select true" | sudo debconf-set-selections
+		sudo apt install -y oracle-java9-installer
+		sudo apt install -y oracle-java9-set-default
+		
+		
+		
+		# mark jdk as the IDEA-JDK. It wont run with openjdk-9.
+		sudo echo "export IDEA_JDK=/usr/lib/jvm/java-8-openjdk-amd64/" >> "/home/call-in-bashrc.sh"
+		
+		
+		# set the language to German
+		apt-get -y install language-pack-de language-pack-de
+		localectl set-locale LANG=de_DE.UTF-8 LANGUAGE="de_DE:de"
+		update-locale LANG=de_DE
+		update-locale LANGUAGE=de_DE
+		
+		
+		
+		# Install xfce and virtualbox additions
+		sudo apt-get update
+		apt-get install -y xfce4 virtualbox-guest-dkms virtualbox-guest-utils virtualbox-guest-x11
+		# Permit anyone to start the GUI
+		sudo echo "allowed_users=anybody" > /etc/X11/Xwrapper.config
+		
+		# install the goodies, like terminal copy paste (Middle mouse key is paste, selecting and left-clicking is copy)
+		sudo apt-get install -y xfce4-goodies
+		
+		
+		# switch the keyboard layout to German
+		sudo echo "setxkbmap de" >> "/home/call-in-bashrc.sh"
+		
+		
+		# install chrome
+		sudo apt-get install -y chromium-browser
+		
+		# store the chromium path, so that karma can find it on "ng test"
+		sudo echo "export CHROME_BIN=/usr/bin/chromium-browser" >> "/home/call-in-bashrc.sh"
+		
+		
+
+		
+		# install NodeJS
+		curl -sL https://deb.nodesource.com/setup_9.x | sudo -E bash -
+		sudo apt-get install -y nodejs
+			
+
+		
+		
+		# install git and clone webapp-tutorial
+		sudo apt-get install -y git
+		cd /home/vagrant
+		git clone https://github.com/skipidar/de.webapp.spring.one.git
+		sudo chown -R vagrant:vagrant /home/vagrant/de.webapp.spring.one
+		chmod +x /home/vagrant/de.webapp.spring.one/gradlew
+				
+		
+		
+		# install IntelliJ IDEA  
+		sudo wget --quiet -O /opt/ideaIU-no-jdk.tar.gz https://download.jetbrains.com/idea/ideaIU-2017.3.3-no-jdk.tar.gz
+		cd /opt/ && sudo tar -zxvf ideaIU-no-jdk.tar.gz
+		sudo rm /opt/ideaIU-no-jdk.tar.gz
+		sudo chown -R vagrant:vagrant .
+		
+					
+		
+		# install angular
+		sudo npm install --unsafe-perm -g @angular/cli
+						
+		
+		
+		# start the GUI
+		# login works with vagrant / vagrant
+		startx
+		
+		
+		# start the idea ide 
+		# sudo bash /home/vagrant/idea*/bin/idea.sh
+		
+	SHELL
+  
+end
+

@@ -1,0 +1,4 @@
+FROM accenture/adop-sensu:0.2.0
+
+# add the check file to the new container
+COPY "sensu-client/etc/sensu/templates/client.json.tmpl" "/etc/sensu/templates/client.json.tmpl"

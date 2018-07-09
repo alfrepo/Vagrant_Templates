@@ -1,0 +1,12 @@
+[Unit]
+Description = Jenkins Swarm slave
+After network.target = jenkins-swarm-slave.service
+
+[Service]
+Type = forking
+ExecStart = /usr/local/bin/jenkins-swarm-slave.sh start
+ExecStop = /usr/local/bin/jenkins-swarm-slave.sh stop
+ExecReload = /usr/local/bin/jenkins-swarm-slave.sh reload
+
+[Install]
+WantedBy=multi-user.target

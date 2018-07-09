@@ -1,0 +1,55 @@
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+	# The most common configuration options are documented and commented below.
+	# For a complete reference, please see the online documentation at
+	# https://docs.vagrantup.com.
+
+	# Every Vagrant development environment requires a box. You can search for
+	# boxes at https://vagrantcloud.com/search.
+	config.vm.box = "box-cutter/ubuntu1604"
+
+	# The url from where the 'config.vm.box' box will be fetched if it
+	# doesn't already exist on the user's system.
+	config.vm.box_url = "https://app.vagrantup.com/box-cutter/boxes/ubuntu1604"
+
+	# memory increase
+	config.vm.provider "virtualbox" do |v|
+        v.memory = 4964
+        v.cpus = 4
+    end
+					  
+	PATH_VAGRANT_PROJECT=File.dirname(__FILE__)
+
+	
+	# forward ports
+	
+	# openshift
+	config.vm.network :forwarded_port, guest: 8443, host: 8443
+	config.vm.network :forwarded_port, guest: 8080 , host: 8080
+
+	
+	
+	# all files here will be added to home
+	config.vm.synced_folder "vagrant-home/", "//root/vagrant-home/"
+	
+  
+	# Use shell script to provision
+	config.vm.provision "shell", inline: <<-SHELL
+			
+		# update
+		apt-get update	
+		
+		
+		###############
+		##### DOCKER
+		
+		# install docker
+		apt-get -y install docker.io
+		
+
+	SHELL
+  
+end

@@ -1,0 +1,6 @@
+FROM accenture/adop-sensu:0.2.0
+
+RUN echo “Using fakturas host $fakturaip
+
+# add the check file to the new container
+COPY "sensu-server/etc/sensu/check.d/basic/check_Faktura.json" "etc/sensu/check.d/check_Faktura.json"

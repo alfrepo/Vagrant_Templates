@@ -1,0 +1,171 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+	# The most common configuration options are documented and commented below.
+	# For a complete reference, please see the online documentation at
+	# https://docs.vagrantup.com.
+
+	# Every Vagrant development environment requires a box. You can search for
+	# boxes at https://vagrantcloud.com/search.
+	config.vm.box = "boxcutter/ubuntu1604"
+
+	# The url from where the 'config.vm.box' box will be fetched if it
+	# doesn't already exist on the user's system.
+	config.vm.box_url = "https://app.vagrantup.com/boxcutter/boxes/ubuntu1604"
+
+	# memory increase
+	config.vm.provider "virtualbox" do |v|
+        v.memory = 14336
+        v.cpus = 4
+    end
+	
+	
+	
+	# forward ports
+
+	# ldap
+	config.vm.network :forwarded_port, guest: 8081, host: 80
+	config.vm.network :forwarded_port, guest: 80, host: 80
+	config.vm.network :forwarded_port, guest: 4369, host: 4369
+	
+	# rabbit MQ
+	config.vm.network :forwarded_port, guest: 5671, host: 5671
+	config.vm.network :forwarded_port, guest: 5672, host: 5672
+	config.vm.network :forwarded_port, guest: 25672, host: 25672
+	config.vm.network :forwarded_port, guest: 15671, host: 15671
+	config.vm.network :forwarded_port, guest: 15672, host: 15672
+	
+	# Redis
+	config.vm.network :forwarded_port, guest: 6379, host: 6379
+	
+	# sensu api
+	config.vm.network :forwarded_port, guest: 4567, host: 4567
+
+	# all files here will be added to home
+	config.vm.synced_folder "vagrant-home/", "//root/vagrant-home/"
+					  
+
+	# CUSTOMISATION OF THE VM HERE
+	PATH_VAGRANT_PROJECT=File.dirname(__FILE__)
+	BOX_IMAGE = "boxcutter/ubuntu1604"
+  
+  
+	# add the file with the test passwords
+	config.vm.provision "file", source: "#{PATH_VAGRANT_PROJECT}\\platform.secrets.sh", destination: "/home/vagrant/platform.secrets.sh"
+
+	
+  
+    config.vm.provision 'deploy',  type: :shell, inline: <<-SHELL
+		
+  
+	SHELL
+  
+	# Use shell script to provision
+	config.vm.provision "shell", inline: <<-SHELL
+
+
+		#########################
+		# ADOP Requirements
+		#########################
+		
+		apt-get update
+		
+		
+		# install a daemon to manage swap dynamically
+		sudo apt install swapspace -y
+
+		# install docker
+		apt-get -y install docker.io
+		
+		# install docker compose
+		curl -L https://github.com/docker/compose/releases/download/1.16.1/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+		
+		# allow execution of docker compose
+		chmod +x /usr/local/bin/docker-compose
+				
+				
+		
+		#########################
+		# now deploy ADOP
+		#########################
+		
+
+		# get adop from github
+		cd ~
+		git clone https://github.com/Accenture/adop-docker-compose
+		cd ~/adop-docker-compose
+		
+		cp /home/vagrant/platform.secrets.sh ~/adop-docker-compose/
+		
+		
+		
+		# modify ADOP
+
+		# replace the docker compose by one, where my changes are done
+		cp -f ~/vagrant-home/adop/adop-docker-compose/docker-compose.yml ~/adop-docker-compose/docker-compose.yml
+		
+		# replace the docker volumes declaration, with a custom jenkins home volume
+		# this replaces the name volume for jenkins. by mine
+		cp -f ~/vagrant-home/adop/etc/volumes/local/default.yml ~/adop-docker-compose/etc/volumes/local/default.yml
+		
+
+		# SINCE WE DONT USE DOCKER-MACHINE - one cant use quickstart, but use "adop compose" directly, which will default to localhost
+		# quickstart is the usual entry-point, which requires the docker-machine
+		# ./quickstart.sh -t local -m "adopmachine" -c "NA" -u "user" -p "123abc"
+		
+		bash ./adop compose init
+		
+
+		# display the secrets, to know what to use for login
+		cat "/home/vagrant/platform.secrets.sh"
+		
+		
+		
+		
+		###############
+		##### ADOP customization
+		###############
+		
+		cd /root/vagrant-home/
+
+		# start a replacement of the sensu-server with my modifications
+		/bin/bash start-sensu-server.sh
+		
+		# starn an ansible jenkins slave (jenkins-slave-2)
+		/bin/bash start-jenkins-slave-ansible.sh
+		
+		# DISABLED: dont need the sensu client directly here. It will be created during the host provisioning
+		# start a new faktura monitoring sensu client
+		#/bin/bash start-sensu-client.sh
+		
+		# FAILS - LDAP is not found by Jenkins, when launched after ADOPstart. Instead modify the jenkins compose file.
+		# start jenkins with the home as a volume in /var/jenkins-home
+		#/bin/bash start-jenkins.sh
+		
+		
+				
+		###############
+		##### add the docker host as Jenkins slave
+		###############
+		sudo apt-get install default-jre -y
+		
+		# check how to start services here: http://www.jcgonzalez.com/ubuntu-16-java-service-wrapper-example	
+		sudo cp "/root/vagrant-home/jenkins/etc/systemd/system/jenkins-swarm-service.service" "/etc/systemd/system/"
+		sudo cp "/root/vagrant-home/jenkins/usr/local/bin/jenkins-swarm-service.sh" "/usr/local/bin/"
+		sudo chmod +x /usr/local/bin/jenkins-swarm-service.sh
+		sudo systemctl enable jenkins-swarm-service
+
+		# TODO fix that - systemctl service fails to start. Instead start the script directly
+		#sudo systemctl start jenkins-swarm-service.service
+		sudo "/usr/local/bin/jenkins-swarm-service.sh" start
+		
+		
+		
+	SHELL
+  
+end

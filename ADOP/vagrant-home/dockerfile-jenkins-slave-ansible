@@ -1,0 +1,16 @@
+FROM accenture/adop-jenkins-slave:0.1.4
+
+COPY "ssh/environment_management_demo.pem" "/root/.ssh/id_rsa"
+
+RUN chmod -R 700 /root/.ssh
+
+
+RUN cd /home && \ 
+	yum -y install epel-release && \ 
+	yum -y install ansible && \ 
+	yum -y install jq
+	
+RUN sed -i 's/.*pipelining.*/pipelining = True/' /etc/ansible/ansible.cfg
+RUN sed -i 's/.*allow_world_readable_tmpfiles.*/allow_world_readable_tmpfiles = True/' /etc/ansible/ansible.cfg
+RUN echo -e "\n[docuvalidator]\n35.157.234.116 ansible_connection=ssh ansible_user=ubuntu ansible_ssh_private_key_file=/root/.ssh/id_rsa \n\n" >> /etc/ansible/hosts
+

@@ -1,0 +1,84 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# The project to control the maschiene in the cloud via Ansible.
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+	# The most common configuration options are documented and commented below.
+	# For a complete reference, please see the online documentation at
+	# https://docs.vagrantup.com.
+
+	# Every Vagrant development environment requires a box. You can search for
+	# boxes at https://vagrantcloud.com/search.
+	config.vm.box = "boxcutter/ubuntu1604"
+
+	# The url from where the 'config.vm.box' box will be fetched if it
+	# doesn't already exist on the user's system.
+	config.vm.box_url = "https://app.vagrantup.com/boxcutter/boxes/ubuntu1604"
+	
+
+	# memory increase
+	config.vm.provider "virtualbox" do |v|
+        v.memory = 4964
+        v.cpus = 4
+    end
+					  
+	PATH_VAGRANT_PROJECT=File.dirname(__FILE__)
+
+	# all files here will be added to home
+	config.vm.synced_folder "#{PATH_VAGRANT_PROJECT}\\vagrant-home\\", "//root/vagrant-home/"
+	
+	
+	# forward ports
+	config.vm.network :forwarded_port, guest: 80, host: 8082
+
+	
+
+	###############
+	#####  LOCAL PROVISIONERS INSTEAD OF DOWNLOAD
+	
+  
+	# Use shell script to provision
+	config.vm.provision "shell", inline: <<-SHELL
+			
+	
+		# update
+		apt-get update	
+		
+		# NodeJS
+		curl -sL https://deb.nodesource.com/setup_9.x | sudo -E bash -
+		sudo apt-get install -y nodejs
+		
+		# Typescript
+		npm install -g typescript
+		
+		
+		###############
+		# Using typescript
+		
+		# create typescript
+		echo -e "
+		class Greeter {
+			constructor(public greeting: string) { }
+			greet() {
+				return \"<h1>\" + this.greeting + \"</h1>\";
+			}
+		};
+
+		var greeter = new Greeter(\"Hello, Ministry of Programming!\");
+		var str = greeter.greet();
+		document.body.innerHTML = greeter(user);	
+		" > /root/vagrant-home/helloworld.ts
+		chmod 777 /root/vagrant-home/helloworld.ts
+		
+		# compile
+		tsc /root/vagrant-home/helloworld.ts
+		
+
+	SHELL
+  
+end

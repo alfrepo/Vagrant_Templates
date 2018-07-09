@@ -1,0 +1,16 @@
+# set TARGET_HOST to dns/ip of proxy
+# set LOGSTASH_HOST to dns/ip of logstash host
+
+jenkins-slave:
+  container_name: jenkins-slave-ansible
+  restart: always
+  image: demo/jenkins-slave:latest
+  net: local_network
+  privileged: true
+  environment:
+    SLAVE_LABELS: "aws ldap java8 docker ansible"
+    SWARM_PASSWORD: password
+    SLAVE_EXECUTORS: 1
+    INITIAL_ADMIN_USER: user
+    INITIAL_ADMIN_PASSWORD: password
+    

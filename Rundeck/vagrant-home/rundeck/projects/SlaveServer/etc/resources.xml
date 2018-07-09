@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project>
+  <node name="master" description="Rundeck server node" tags="" hostname="master" osArch="amd64" osFamily="unix" osName="Linux" osVersion="4.4.0-87-generic" username="root"/>
+  <node name="slave" description="Rundeck slave node" tags="slave" hostname="10.0.0.11" osArch="amd64" osFamily="unix" osName="Linux" osVersion="4.4.0-87-generic" username="vagrant"/>
+</project>

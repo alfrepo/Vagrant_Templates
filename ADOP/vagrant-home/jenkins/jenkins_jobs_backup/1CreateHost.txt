@@ -1,0 +1,36 @@
+#!/bin/bash
+aws s3 cp "s3://environment-management-oge/cloudformation/faktura-host/ec2.faktura.host.cloudformation.json" ec2.faktura.host.cloudformation.json
+
+stackname="Faktura$BUILD_NUMBER"
+templatefileuri="file:///`realpath ec2.faktura.host.cloudformation.json`"
+
+echo $templatefileuri
+
+cd $WORKSPACE
+
+aws cloudformation create-stack --stack-name $stackname --template-body "$templatefileuri" --parameters ParameterKey=InstanceTypeParameter,ParameterValue="m3.large" \
+ParameterKey=KeyName,ParameterValue=environment_management_demo \
+ParameterKey=MyVpcId,ParameterValue="vpc-1e52bb75" \
+ParameterKey=ServerSubnet,ParameterValue="subnet-0b893560" \
+ParameterKey=MyAvailibilityZone,ParameterValue="eu-central-1a"
+
+# wait for the stack to be completed
+echo -e "Waiting for the stack '$stackname' being created"
+aws cloudformation wait stack-create-complete --stack-name $stackname
+
+
+# get the publicIp
+commandGetStackPubIp="aws cloudformation describe-stacks --stack-name ${stackname} | jq --raw-output '.Stacks[] | .Outputs[] | select(.OutputKey == \"PublicIp\" ) | .OutputValue' "
+echo -e $commandGetStackPubIp
+hostPublicIp=$( eval $commandGetStackPubIp)
+echo "The Host Ip: $hostPublicIp"
+
+# store the ip for parameterization of the next build
+echo hostPublicIp=$hostPublicIp > $WORKSPACE/env.properties
+
+
+# wait till the instance is initialized
+# TODO replace sleep by something which really checks the state of the instance
+sleep 180
+
+

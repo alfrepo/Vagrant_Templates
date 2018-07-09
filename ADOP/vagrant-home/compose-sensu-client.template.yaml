@@ -1,0 +1,14 @@
+sensu-client:
+  container_name: sensu-client-faktura-{{ faktura_ip }}
+  restart: always
+  image: demo/sensu-client-faktura:latest
+  net: local_network
+  command: client
+  environment:
+    TRANSPORT_NAME: rabbitmq
+    CLIENT_NAME: faktura-host-{{ faktura_ip }}
+    CLIENT_ADDRESS: {{ faktura_ip }}
+    RABBITMQ_HOST: sensu-rabbitmq
+    JENKINS_PREFIX: jenkins
+    CLIENT_SUBSCRIPTIONS: "faktura"
+    FAKTURA_IP: {{ faktura_ip }}

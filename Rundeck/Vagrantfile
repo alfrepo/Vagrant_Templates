@@ -1,0 +1,169 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+	# The most common configuration options are documented and commented below.
+	# For a complete reference, please see the online documentation at
+	# https://docs.vagrantup.com.
+
+		
+
+
+
+	# CUSTOMISATION OF THE VM HERE
+	PATH_VAGRANT_PROJECT=File.dirname(__FILE__)
+	
+	# all files here will be added to home
+	config.vm.synced_folder "#{PATH_VAGRANT_PROJECT}\\vagrant-home\\", "/home/vagrant/vagrant-home/"
+
+	# use my own ssh key, dont generate own keys
+	config.ssh.insert_key = false
+
+	# say the user, how to connect to the rundeck
+	config.vm.post_up_message = "Login under http://10.0.0.10:4440 using admin/admin. Then go to http://10.0.0.10:4440/menu/home. The slaves are under 10.0.0.11 and 10.0.0.12"
+	
+	BOX_IMAGE = "geerlingguy/ubuntu1604"
+  
+	# you can ssh via "vagrant ssh master"
+	config.vm.define "master" do |subconfig|
+		subconfig.vm.box = BOX_IMAGE
+		subconfig.vm.hostname = "master"
+		subconfig.vm.network :private_network, ip: "10.0.0.10"
+		
+		# forward ports
+		subconfig.vm.network :forwarded_port, guest: 80, host: 9080
+		subconfig.vm.network :forwarded_port, guest: 8080, host: 9081
+		subconfig.vm.network :forwarded_port, guest: 4440, host: 4440 
+		subconfig.vm.network :forwarded_port, guest: 4443, host: 4443 
+		
+		
+		# memory increase
+		subconfig.vm.provider "virtualbox" do |v|
+			v.memory = 1964
+			v.cpus = 2
+		end
+		
+		subconfig.vm.provision "shell", inline: <<-SHELL
+		
+			###### bulk import the ssh keys dynamically by extension
+			cd '/home/vagrant/vagrant-home/ssh/'
+
+			# add private keys *.openssh.ppk to the .ssh
+			for i in *.openssh.ppk; do
+				[ -f "$i" ] || break
+				cp "$i" "/home/vagrant/.ssh/"
+			done
+		
+	
+			apt-get update	
+			
+			# install java for rundeck
+			apt-get install -y openjdk-8-jdk
+
+			# configure the ssh key permissions to 700. Otherwise ansible will decline the usage of the key
+			chmod -R 700 '/home/vagrant/.ssh'
+			
+			
+			# restore the rundeck "project"
+			# cp -R /home/vagrant/vagrant-home/rundeck/projects /home/vagrant/			
+			mkdir -m 777 -p /opt/rundeck/
+			cd /opt/rundeck/
+			cp -R /home/vagrant/vagrant-home/rundeck/projects /opt/rundeck/
+			chmod -R 777 /opt/rundeck
+			
+			
+			cd "/opt/rundeck/projects/"
+									
+			# download and start rundeck
+			# wget --quiet -O rundeck-launcher.jar http://dl.bintray.com/rundeck/rundeck-maven/rundeck-launcher-2.10.7.jar
+			cp /home/vagrant/vagrant-home/rundeck/rundeck-launcher.jar /opt/rundeck/
+			
+			# check http://rundeck.org/docs/administration/project-setup.html
+			# create start script
+			echo -e '#!/bin/bash' >> /etc/init.d/rundeck.sh
+			echo -e 'export RDECK_BASE="/opt/rundeck/projects/"' >> /etc/init.d/rundeck.sh
+			echo -e 'cd "/opt/rundeck/projects/"' >> /etc/init.d/rundeck.sh
+			echo -e 'nohup java -Dserver.http.port=4440 -Ddefault.user.name=admin -Ddefault.user.password=admin "-Dserver.http.host=10.0.0.10" -jar /opt/rundeck/rundeck-launcher.jar &' >> /etc/init.d/rundeck.sh
+			
+			# make it executable
+			chmod +x /etc/init.d/rundeck.sh
+			
+			# Make sure this script get executed every time Linux starts
+			update-rc.d rundeck.sh defaults 100
+			
+			# start rundeck now
+			sudo /etc/init.d/rundeck.sh
+			
+			# check http://rundeck.org/docs/administration/installation.html
+			# nohup java -Dserver.http.port=4440 -Ddefault.user.name=admin -Ddefault.user.password=admin "-Dserver.http.host=10.0.0.10" -jar /opt/rundeck/rundeck-launcher.jar >> /dev/null &
+			
+		SHELL
+	end
+
+	# you can ssh via "vagrant ssh slave"
+	config.vm.define "slave" do |subconfig|
+		subconfig.vm.box = BOX_IMAGE
+		subconfig.vm.hostname = "slave"
+		subconfig.vm.network :private_network, ip: "10.0.0.11"
+		
+		# forward ports
+		subconfig.vm.network :forwarded_port, guest: 80, host: 9180
+		subconfig.vm.network :forwarded_port, guest: 8080, host: 9181
+		
+		subconfig.vm.provision "shell", inline: <<-SHELL
+    
+			# add public keys as *.openssh.public to authorized keys
+			cd '/home/vagrant/vagrant-home/ssh/'
+			for i in *.openssh.public; do
+				[ -f "$i" ] || break
+				echo -e "\n" >> "/home/vagrant/.ssh/authorized_keys"
+				cat "$i" 	 >> "/home/vagrant/.ssh/authorized_keys"
+			done
+			
+		
+			# install java here
+			apt-get update	
+				
+			# install java for rundeck
+			apt-get install -y openjdk-8-jdk
+			
+		SHELL
+		
+	end
+	
+	# you can ssh via "vagrant ssh slave"
+	config.vm.define "slave2" do |subconfig|
+		subconfig.vm.box = BOX_IMAGE
+		subconfig.vm.hostname = "slave"
+		subconfig.vm.network :private_network, ip: "10.0.0.12"
+		
+		# forward ports
+		subconfig.vm.network :forwarded_port, guest: 80, host: 9280
+		subconfig.vm.network :forwarded_port, guest: 8080, host: 9281
+		
+		subconfig.vm.provision "shell", inline: <<-SHELL
+    
+			# add public keys as *.openssh.public to authorized keys
+			cd '/home/vagrant/vagrant-home/ssh/'
+			for i in *.openssh.public; do
+				[ -f "$i" ] || break
+				echo -e "\n" >> "/home/vagrant/.ssh/authorized_keys"
+				cat "$i" 	 >> "/home/vagrant/.ssh/authorized_keys"
+			done
+		
+		SHELL
+	end
+	
+  
+  # Use shell script to provision
+  config.vm.provision "shell", inline: <<-SHELL
+    
+	# do here the provisioning for all nodes
+	
+  SHELL
+  
+end

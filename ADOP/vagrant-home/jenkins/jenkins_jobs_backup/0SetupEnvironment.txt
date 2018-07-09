@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# install aws cli if not yet there
+if ! [ -x "$(command -v aws)" ]; then
+    pip --version
+
+	# install aws cli
+	pip install awscli --upgrade --user
+fi
+
+
+
+if ! [ -x "$(command -v unzip)" ]; then
+    yum -y install unzip    
+fi
+
+
+
+
+#!/bin/bash
+
+# prepare teh aws config folder
+mkdir -p ~/.aws
+
+# add aws configs
+echo -e \
+"[default] \n"\
+"region = eu-central-1"\
+> ~/.aws/config
+
+cat ~/.aws/config
+
+# TODO: move aws credentials to secrets
+# add aws credentials. Use the credentials allowing to download the seed from S3
+# user "deployer_faktura_bash_script"
+echo -e \
+"[default] \n"\
+"aws_access_key_id = AKIAIBPTPDJPIKIFJZEQ \n"\
+"aws_secret_access_key = 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 \n"\
+> ~/.aws/credentials
+
+cat ~/.aws/credentials
+
+
+

@@ -1,0 +1,82 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# The project to control the maschiene in the cloud via Ansible.
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+	# The most common configuration options are documented and commented below.
+	# For a complete reference, please see the online documentation at
+	# https://docs.vagrantup.com.
+
+	# Every Vagrant development environment requires a box. You can search for
+	# boxes at https://vagrantcloud.com/search.
+	config.vm.box = "geerlingguy/ubuntu1604"
+
+	# The url from where the 'config.vm.box' box will be fetched if it
+	# doesn't already exist on the user's system.
+	config.vm.box_url = "https://app.vagrantup.com/geerlingguy/boxes/ubuntu1604"
+	
+
+	# memory increase
+	config.vm.provider "virtualbox" do |v|
+        v.memory = 4964
+        v.cpus = 4
+    end
+					  
+	PATH_VAGRANT_PROJECT=File.dirname(__FILE__)
+
+	# all files here will be added to home
+	config.vm.synced_folder "#{PATH_VAGRANT_PROJECT}\\vagrant-home\\", "//home/vagrant/vagrant-home/"
+	
+	
+	# forward ports
+	# kibana
+	config.vm.network :forwarded_port, guest: 5601, host: 5601
+	# elasticsearch
+	config.vm.network :forwarded_port, guest: 9200, host: 9200
+	# logstash
+	config.vm.network :forwarded_port, guest: 5044, host: 5044
+	config.vm.network :forwarded_port, guest: 5054, host: 5054
+	
+	
+	config.vm.post_up_message = <<-MESSAGE
+		Access Kibana under: http://localhost:5601.
+		
+		Logstash input 
+		- beats is configured under: http://localhost:5044
+		- syslog is configured under: http://localhost:5054
+		
+		Elasticsearch runs under: http://localhost:9200
+	MESSAGE
+	
+  
+	# Use shell script to provision
+	config.vm.provision "shell", inline: <<-SHELL
+			
+	
+		# update
+		apt-get update	
+	
+		
+		###############
+		##### DOCKER
+		
+		# install docker
+		apt-get -y install docker.io
+		
+		
+		# increase the mmap space
+		# https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html
+		sudo sysctl -w vm.max_map_count=262144
+		
+		# run elk
+		# http://elk-docker.readthedocs.io/#disabling-ssl-tls
+		sudo docker run -v /home/vagrant/vagrant-home/02-beats-input.conf:/etc/logstash/conf.d/02-beats-input.conf -p 5601:5601 -p 9200:9200 -p 5044:5044 -d --name elk sebp/elk
+		
+	SHELL
+  
+end

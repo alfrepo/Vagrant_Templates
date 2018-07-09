@@ -1,0 +1,13 @@
+# 
+
+sensu-server:
+  container_name: sensu-server
+  restart: always
+  image: demo/sensu-server:latest
+  net: local_network
+  command: server
+  environment:
+    API_HOST: sensu-api
+    RABBITMQ_HOST: sensu-rabbitmq
+    REDIS_HOST: sensu-redis
+    TRANSPORT_NAME: rabbitmq

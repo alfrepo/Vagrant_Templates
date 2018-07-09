@@ -1,0 +1,6 @@
+---
+- name: Install sensu
+  hosts: slave
+  become: true
+  roles:
+    - { role: cmacrae.sensu, sensu_master: true, sensu_include_dashboard: true  }
