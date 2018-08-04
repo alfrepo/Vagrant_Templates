@@ -1,0 +1,8 @@
+configs:
+    use: 'home'
+    home:
+        proxy_http: ''
+        proxy_https: ''
+    office:
+        proxy_http: ''
+        proxy_https: ''

@@ -1,0 +1,57 @@
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+	# The most common configuration options are documented and commented below.
+	# For a complete reference, please see the online documentation at
+	# https://docs.vagrantup.com.
+
+	# Every Vagrant development environment requires a box. You can search for
+	# boxes at https://vagrantcloud.com/search.
+	config.vm.box = "geerlingguy/ubuntu1604"
+
+	# needed to read the config yaml file
+	require 'yaml'
+
+	PATH_VAGRANT_PROJECT=File.dirname(__FILE__)
+	
+	config.vm.provision "file", source: "#{PATH_VAGRANT_PROJECT}\\.aws\\config", destination: "/home/vagrant/.aws/config"
+	config.vm.provision "file", source: "#{PATH_VAGRANT_PROJECT}\\.aws\\credentials", destination: "/home/vagrant/.aws/credentials"
+		
+	
+	current_dir    = File.dirname(File.expand_path(__FILE__))
+	configs        = YAML.load_file("#{current_dir}/config.yaml")
+	vagrant_config = configs['configs'][configs['configs']['use']]
+
+
+	# make the root disk available
+	config.vm.synced_folder "c:/", "//mnt/c/"
+
+					  	
+	if Vagrant.has_plugin?("vagrant-proxyconf")
+		config.proxy.http     = vagrant_config['proxy_http']
+		config.proxy.https    = vagrant_config['proxy_https']
+	end
+		  
+	# Use shell script to provision
+	config.vm.provision "shell", inline: <<-SHELL	
+
+		# update
+		apt-get update -y
+
+
+		### AWS CLI ###
+		
+		# pip
+		sudo apt install -y python-pip
+		
+		# awscli
+		sudo pip install awscli
+	
+		# copy here the aws configs, the file provisioner cant do that. permission denied
+		sudo cp -R /home/vagrant/.aws /root/
+		
+	SHELL
+	
+end
