@@ -9,11 +9,8 @@ Vagrant.configure("2") do |config|
 
 	# Every Vagrant development environment requires a box. You can search for
 	# boxes at https://vagrantcloud.com/search.
-	config.vm.box = "box-cutter/ubuntu1604"
+	config.vm.box = "geerlingguy/ubuntu1804"
 
-	# The url from where the 'config.vm.box' box will be fetched if it
-	# doesn't already exist on the user's system.
-	config.vm.box_url = "https://app.vagrantup.com/box-cutter/boxes/ubuntu1604"
 
 	# memory increase
 	config.vm.provider "virtualbox" do |v|
@@ -22,32 +19,46 @@ Vagrant.configure("2") do |config|
     end
 					  
 	PATH_VAGRANT_PROJECT=File.dirname(__FILE__)
-
-	
-	# forward ports
-	
-	# openshift
-	config.vm.network :forwarded_port, guest: 8443, host: 8443
-	config.vm.network :forwarded_port, guest: 8080 , host: 8080
-
 	
 	
 	# all files here will be added to home
 	config.vm.synced_folder "vagrant-home/", "//root/vagrant-home/"
+
+	config.vm.network "private_network", ip: "192.168.50.4"
 	
   
 	# Use shell script to provision
 	config.vm.provision "shell", inline: <<-SHELL
 			
 		# update
-		apt-get update	
+		apt-get update -y
 		
 		
 		###############
 		##### DOCKER
 		
+		#Install packages to allow apt to use a repository over HTTPS:
+		sudo apt-get install -y \
+		apt-transport-https \
+		ca-certificates \
+		curl \
+		software-properties-common
+		
+		# Add Docker’s official GPG key:
+		curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+		
+		
+		# add the docker stable repository
+		sudo add-apt-repository \
+	    "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+	    $(lsb_release -cs) \
+	    stable"
+		
+		# update
+		apt-get update -y
+		
 		# install docker
-		apt-get -y install docker.io
+		apt-get install -y docker-ce
 		
 
 	SHELL
