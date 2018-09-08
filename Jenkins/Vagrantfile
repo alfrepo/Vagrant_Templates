@@ -1,0 +1,81 @@
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+	# The most common configuration options are documented and commented below.
+	# For a complete reference, please see the online documentation at
+	# https://docs.vagrantup.com.
+
+	# Every Vagrant development environment requires a box. You can search for
+	# boxes at https://vagrantcloud.com/search.
+	config.vm.box = "geerlingguy/ubuntu1804"
+
+
+	# memory increase
+	config.vm.provider "virtualbox" do |v|
+        v.memory = 4964
+        v.cpus = 4
+    end
+					  
+	PATH_VAGRANT_PROJECT=File.dirname(__FILE__)
+	
+	
+
+	config.vm.network "private_network", ip: "192.168.50.4"
+
+		
+	# forward ports
+	config.vm.network :forwarded_port, guest: 50000, host: 50000
+	config.vm.network :forwarded_port, guest: 8080, host: 8090
+
+
+	# say the user, how to connect
+	config.vm.post_up_message = "Login under http://localhost:8090 using admin/admin."
+	
+  
+	# Use shell script to provision
+	config.vm.provision "shell", inline: <<-SHELL
+			
+		# update
+		apt-get update -y
+		
+		
+		###############
+		##### DOCKER
+		
+		#Install packages to allow apt to use a repository over HTTPS:
+		sudo apt-get install -y \
+		apt-transport-https \
+		ca-certificates \
+		curl \
+		software-properties-common
+		
+		# Add Docker’s official GPG key:
+		curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+		
+		
+		# add the docker stable repository
+		sudo add-apt-repository \
+	    "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+	    $(lsb_release -cs) \
+	    stable"
+		
+		# update
+		apt-get update -y
+		
+		# install docker
+		apt-get install -y docker-ce
+		
+
+		# Jenkins
+		sudo docker run -td --restart=always  --name jenkins -v /vagrant/jenkins_home:/var/jenkins_home -p 8080:8080 -p 50000:50000 jenkins/jenkins:2.140
+
+		# symlink, so that the path to JENKINS_HOME inside container - can be used from the host system
+		ln -s /vagrant/jenkins_home /var/jenkins_home
+
+
+ 
+	SHELL
+  
+end
