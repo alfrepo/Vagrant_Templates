@@ -1,0 +1,447 @@
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+    # The most common configuration options are documented and commented below.
+    # For a complete reference, please see the online documentation at
+    # https://docs.vagrantup.com.
+
+    # Every Vagrant development environment requires a box. You can search for
+    # boxes at https://vagrantcloud.com/search.
+    config.vm.box = "geerlingguy/ubuntu2004"
+
+    PATH_VAGRANT_PROJECT=File.dirname(__FILE__)
+
+    config.ssh.insert_key = false
+
+    config.vm.provision "file", source: "#{PATH_VAGRANT_PROJECT}\\.aws\\config", destination: "/home/vagrant/.aws/config"
+    config.vm.provision "file", source: "#{PATH_VAGRANT_PROJECT}\\.aws\\credentials", destination: "/home/vagrant/.aws/credentials"
+
+    # forwarding ports
+    config.vm.network "forwarded_port", guest: 3000, host: 3000, protocol: "tcp" # node.js apps
+    config.vm.network "forwarded_port", guest: 3000, host: 3000, protocol: "udp" # node.js apps
+    config.vm.network "forwarded_port", guest: 4200, host: 4200, protocol: "tcp" # node.js apps
+    config.vm.network "forwarded_port", guest: 4200, host: 4200, protocol: "udp" # node.js apps
+    config.vm.network "forwarded_port", guest: 5000, host: 5000, protocol: "tcp" # demo auth0 apps
+    config.vm.network "forwarded_port", guest: 5000, host: 5000, protocol: "udp" # demo auth0 apps
+    config.vm.network "forwarded_port", guest: 8000, host: 8000, protocol: "tcp" # dev dynamo DB
+    config.vm.network "forwarded_port", guest: 8000, host: 8000, protocol: "udp" # dev dynamo DB
+	config.vm.network "forwarded_port", guest: 8001, host: 8001, protocol: "tcp" # dev dynamo DB
+	config.vm.network "forwarded_port", guest: 8001, host: 8001, protocol: "udp" # dev dynamo DB
+	config.vm.network "forwarded_port", guest: 8443, host: 8443, protocol: "tcp" # dev dynamo DB
+	config.vm.network "forwarded_port", guest: 8443, host: 8443, protocol: "udp" # dev dynamo DB
+    config.vm.network "forwarded_port", guest: 389, host: 389, protocol: "tcp" # demo auth0 apps
+    config.vm.network "forwarded_port", guest: 389, host: 389, protocol: "udp" # demo auth0 apps
+    config.vm.network "forwarded_port", guest: 636, host: 636, protocol: "tcp" # demo auth0 apps
+    config.vm.network "forwarded_port", guest: 636, host: 636, protocol: "udp" # demo auth0 apps
+	config.vm.network "forwarded_port", guest: 5432, host: 5432 # postgres apps
+	config.vm.network "forwarded_port", guest: 8002, host: 8002 # postgres DB admin ui
+	config.vm.network "forwarded_port", guest: 8003, host: 8003 # free
+	config.vm.network "forwarded_port", guest: 8004, host: 8004 # free
+	config.vm.network "forwarded_port", guest: 8005, host: 8005 # free
+	config.vm.network "forwarded_port", guest: 8006, host: 8006 # free
+    config.vm.network "forwarded_port", guest: 8007, host: 8007 # free
+    config.vm.network "forwarded_port", guest: 8008, host: 8008 # free
+	config.vm.network "forwarded_port", guest: 8009, host: 8009 # free
+    config.vm.network "forwarded_port", guest: 3300, host: 3300, protocol: "tcp" # For ssh tunnel
+    config.vm.network "forwarded_port", guest: 3300, host: 3300, protocol: "udp" # For ssh tunnel
+    config.vm.network "forwarded_port", guest: 8888, host: 8888 # chronograph
+    config.vm.network "forwarded_port", guest: 8092, host: 8092 # telegraph
+    config.vm.network "forwarded_port", guest: 8125, host: 8125 # telegraph
+    config.vm.network "forwarded_port", guest: 8094, host: 8094 # telegraph
+    config.vm.network "forwarded_port", guest: 9092, host: 9092 # kapacitor
+    config.vm.network "forwarded_port", guest: 8086, host: 8086 # influxdb
+    config.vm.network "forwarded_port", guest: 8080, host: 8080 # typical web apps
+
+    # make the root disk available
+    config.vm.synced_folder "c:/", "//mnt/c/"
+
+    config.vm.provider "virtualbox" do |v|
+        v.memory = 8112
+        v.cpus = 4
+    end
+
+
+
+    # Use shell script to provision
+	config.vm.provision "shell", inline: <<-SHELL
+	
+
+# adding custom scripts to the path
+chmod -R +x /home/vagrant/shell
+cp /home/vagrant/shell/*.sh /usr/local/bin/
+
+
+
+# prevents interactive promt https://unix.stackexchange.com/questions/146283/how-to-prevent-prompt-that-ask-to-restart-services-when-installing-libpq-dev
+export DEBIAN_FRONTEND=noninteractive
+echo "export DEBIAN_FRONTEND=noninteractive" >> /home/vagrant/.bashrc
+echo "export DEBIAN_FRONTEND=noninteractive" >> /root/.bashrc
+
+
+
+#### Configure ssh jump host key ####
+chmod 700 /home/vagrant/.ssh/ssh-jumphost.priv.openssh.ppk
+
+
+
+#### Configure ssh for proxy usage ####
+echo -e "\
+Host code.siemens.com \n \
+    IdentityFile /home/vagrant/.ssh/gitlab.ppk \n \
+ \n " > /home/vagrant/.ssh/config
+
+
+
+# copy required file to the root home. File provisioner cant do that, permissions
+cp -R /home/vagrant/.aws /root/
+cp -R /home/vagrant/.ssh /root/
+
+
+
+# set the time zone
+sudo timedatectl set-timezone Europe/Berlin
+
+
+# update
+apt-get update -y
+
+
+
+
+
+
+##################################################################################################################################
+##################################################################################################################################
+
+
+
+
+# OH MY POSH
+
+apt-get install -y unzip
+VHOME="/home/vagrant"
+
+sudo wget https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/posh-linux-amd64 -O /usr/local/bin/oh-my-posh
+sudo chmod +x /usr/local/bin/oh-my-posh
+
+mkdir -p $VHOME/.poshthemes
+wget https://github.com/JanDeDobbeleer/oh-my-posh/releases/latest/download/themes.zip -O $VHOME/.poshthemes/themes.zip
+unzip $VHOME/.poshthemes/themes.zip -d $VHOME/.poshthemes
+chmod 777 $VHOME/.poshthemes/*.json
+chown vagrant:vagrant $VHOME/.poshthemes/*.json
+rm $VHOME/.poshthemes/themes.zip
+
+# adding ohmyposh theme - to the bashrc
+sudo echo 'eval "$(oh-my-posh --init --shell bash --config ~/.poshthemes/jandedobbeleer.omp.json\)" ' >> $VHOME/.bashrc
+
+
+
+
+
+# font
+wget https://github.com/ryanoasis/nerd-fonts/releases/download/v2.1.0/Meslo.zip -O $VHOME/Meslo.zip
+mkdir -p $VHOME/.fonts
+unzip $VHOME/Meslo.zip -d $VHOME/.fonts
+sudo apt-get install -y  fontconfig
+fc-cache -fv
+
+
+
+
+
+
+
+
+
+
+# DOCKER
+
+#Install packages to allow apt to use a repository over HTTPS:
+sudo apt-get install -y \
+apt-transport-https \
+ca-certificates \
+curl \
+software-properties-common
+
+
+
+
+
+
+# Add Docker’s official GPG key:
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+
+# add the docker stable repository
+sudo add-apt-repository \
+"deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+$(lsb_release -cs) \
+stable"
+
+# update
+apt-get update -y
+
+# install docker
+apt-get install -y docker-ce
+
+
+# configure the proxy for docker
+sudo mkdir -p /etc/systemd/system/docker.service.d/
+
+
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+
+
+
+
+
+# add docker compose
+curl -sL "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-Linux-x86_64" -o /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+
+# uninstall because docker login doesnt work otherwise
+# https://stackoverflow.com/questions/51222996/docker-login-fails-on-a-server-with-no-x11-installed
+# sudo apt -y remove golang-docker-credential-helpers
+
+
+
+
+# Kubectl
+sudo apt-get update -y && sudo apt-get install -y apt-transport-https gnupg2
+curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
+sudo apt-get update -y
+sudo apt-get install -y kubectl
+
+
+
+# Helm
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+
+
+
+
+
+
+
+
+
+
+# NODE
+
+# node.js
+# add a source file for the official Node.js 16.x LTS repo, grab the signing key and will run apt update
+curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+
+
+
+# tool for decoding jwt tokens
+npm install -g jwt-cli
+
+# CDK cloud development toolkit
+npm install -g aws-cdk
+
+
+# TOOLS WITHOUT CONFIGURATION
+
+
+# java
+apt-get install -y openjdk-17-jdk
+
+
+# install zip
+apt-get install -y zip
+
+
+# go
+apt-get install -y golang-go
+
+
+# tool for reading jason in console
+apt-get install -y jq
+
+
+# install brew
+apt-get install -y linuxbrew-wrapper
+
+# refresh session
+su - $USER
+
+
+
+
+
+
+# MAVEN
+
+# maven
+apt-get install -y maven
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# PYPTHON
+
+# apg - generates passwords
+apt-get install -y apg
+
+
+# pip
+apt-get install -y python3-pip
+
+# refresh session
+su - $USER
+
+
+# pip upgrade and set home directory current user
+sudo -H pip3 install --upgrade pip
+
+# refresh session
+su - $USER
+
+
+# awscli
+pip3 install awscli
+
+
+# for some reason only the installation for a user works fine.
+# sam https://itnext.io/creating-aws-lambda-applications-with-sam-dd13258c16dd
+# install sam for the user "vagrant"
+sudo -H -u vagrant bash -c 'pip3 install --user aws-sam-cli'
+
+# install sam for the user "root"
+sudo pip3 install --user aws-sam-cli
+
+# adding to the path
+sudo echo "PATH=/root/.local/bin:$PATH" >> /root/.bashrc
+sudo echo "PATH=/home/vagrant/.local/bin:$PATH" >> /home/vagrant/.bashrc
+
+
+
+
+# jinja2 for cli
+pip3 install j2cli
+pip3 install j2cli[yaml]
+
+
+
+
+# terraform or ansible require an upgrade
+pip3 install --upgrade cryptography
+
+
+# refresh session
+su - $USER
+
+
+
+
+# GRADLE
+
+# gradle proxy configuration
+mkdir -p /root/.gradle/
+touch /root/.gradle/gradle.properties
+
+
+
+cp -rf /root/.gradle /home/vagrant/
+chown -R vagrant:vagrant /home/vagrant/.gradle
+
+
+
+
+
+
+
+
+
+# GIT
+
+# add git authentication
+git config --global user.name "user.name"
+git config --global user.email "user.name@siemens.com"
+git config -l
+
+cp /root/.gitconfig /home/vagrant/
+chown vagrant:vagrant /home/vagrant/.gitconfig
+
+
+#### add code.siemens.com to the known_hosts
+ssh-keyscan code.siemens.com >> /home/vagrant/.ssh/known_hosts
+
+# the rights of the gitlab.key should be restricted to the vagrant used
+sudo chown -R vagrant:vagrant /home/vagrant/.ssh
+sudo chmod -R 700 /home/vagrant/.ssh
+
+
+# add a default gitattribute to prevent line conversion
+echo -e "# Handle line endings automatically for files detected as text\n* text=auto\n\n# Never modify line endings of our bash scripts\n*.sh -crlf\n\n# The above will handle all files NOT found below\n*.*     binary" > /etc/gitattributes
+
+
+
+
+
+# ANSIBLE
+
+mkdir -p /etc/ansible/
+touch  /etc/ansible/hosts
+touch  /etc/ansible/ansible.cfg
+
+
+
+# sudo apt-add-repository -y ppa:ansible/ansible
+# sudo apt-get -y update
+# sudo apt-get -y install ansible
+# configure some example hosts for ansible
+echo -e "[local]\n127.0.0.1   ansible_connection=local \n" >> /etc/ansible/hosts # add hosts
+
+# use the ec2key.priv.openssh.ppk, which is the default key on our project
+echo -e "[aws]\n52.17.66.234 ansible_user=ubuntu ansible_ssh_private_key_file=/home/vagrant/.ssh/ec2key.priv.openssh.ppk\n" >> /etc/ansible/hosts # add hosts
+sed -i 's/.*pipelining = False.*/pipelining = True/' /etc/ansible/ansible.cfg # reconfigure ansible
+sed -i 's/.*allow_world_readable_tmpfiles.*/allow_world_readable_tmpfiles= True/' /etc/ansible/ansible.cfg
+sed -i 's/.*retry_files_enabled =.*/retry_files_enabled = False/' /etc/ansible/ansible.cfg
+
+# ansible
+# IAC reqruies ansible >= Version 2.4
+sudo -H pip3 install ansible==2.9
+
+
+
+
+
+
+
+
+# TERRAFORM
+apt-get install -y unzip
+
+# IAC reqruies ansible >= Version 0.9
+wget --quiet https://releases.hashicorp.com/terraform/0.15.5/terraform_0.15.5_linux_amd64.zip
+unzip terraform_0.15.5_linux_amd64.zip
+sudo mv -f terraform /usr/local/bin/
+
+
+
+
+######################################### 2
+
+    SHELL
+
+end
