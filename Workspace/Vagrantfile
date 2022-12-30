@@ -17,6 +17,8 @@ Vagrant.configure("2") do |config|
 
     config.vm.provision "file", source: "#{PATH_VAGRANT_PROJECT}\\.aws\\config", destination: "/home/vagrant/.aws/config"
     config.vm.provision "file", source: "#{PATH_VAGRANT_PROJECT}\\.aws\\credentials", destination: "/home/vagrant/.aws/credentials"
+	
+	config.vm.network "public_network"
 
     # forwarding ports
     config.vm.network "forwarded_port", guest: 3000, host: 3000, protocol: "tcp" # node.js apps
@@ -53,6 +55,9 @@ Vagrant.configure("2") do |config|
     config.vm.network "forwarded_port", guest: 9092, host: 9092 # kapacitor
     config.vm.network "forwarded_port", guest: 8086, host: 8086 # influxdb
     config.vm.network "forwarded_port", guest: 8080, host: 8080 # typical web apps
+    config.vm.network "forwarded_port", guest: 27017, host: 27017 # mongodb
+    config.vm.network "forwarded_port", guest: 8081, host: 8081 # mongo-express
+
 
     # make the root disk available
     config.vm.synced_folder "c:/", "//mnt/c/"
@@ -66,6 +71,8 @@ Vagrant.configure("2") do |config|
 
     # Use shell script to provision
 	config.vm.provision "shell", inline: <<-SHELL
+	
+
 	
 
 # adding custom scripts to the path
@@ -88,7 +95,7 @@ chmod 700 /home/vagrant/.ssh/ssh-jumphost.priv.openssh.ppk
 
 #### Configure ssh for proxy usage ####
 echo -e "\
-Host code.siemens.com \n \
+Host code.privategitlabrepo.com \n \
     IdentityFile /home/vagrant/.ssh/gitlab.ppk \n \
  \n " > /home/vagrant/.ssh/config
 
@@ -150,7 +157,11 @@ fc-cache -fv
 
 
 
+# brew
+apt-get install -y linuxbrew-wrapper
 
+# refresh session
+su - $USER
 
 
 
@@ -197,14 +208,16 @@ sudo systemctl restart docker
 
 
 
-# add docker compose
-curl -sL "https://github.com/docker/compose/releases/download/1.24.0/docker-compose-Linux-x86_64" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
+# DOCKER COMPOSE
+
+# Docker-compose
+COMPOSE_VERSION="2.3.3"
+
+sudo curl -L "https://github.com/docker/compose/releases/download/v2.12.2/docker-compose-$(uname -s)-$(uname -m)"  -o /usr/local/bin/docker-compose
+sudo mv /usr/local/bin/docker-compose /usr/bin/docker-compose
+sudo chmod +x /usr/bin/docker-compose
 
 
-# uninstall because docker login doesnt work otherwise
-# https://stackoverflow.com/questions/51222996/docker-login-fails-on-a-server-with-no-x11-installed
-# sudo apt -y remove golang-docker-credential-helpers
 
 
 
@@ -218,10 +231,53 @@ sudo apt-get install -y kubectl
 
 
 
+
 # Helm
 curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
 chmod 700 get_helm.sh
 ./get_helm.sh
+rm ./get_helm.sh
+
+
+
+
+
+
+
+# MINIKUBE
+
+# Minikube Variables
+KUBERNETES_VERSION="1.23.2"
+
+
+
+
+
+# Kubernetes >1.20.2 requirements
+sudo apt-get install -y conntrack
+
+## /usr/sbin/iptables needs to be in path for minikube driver=none
+export PATH=$PATH:/usr/sbin/
+
+# Install minikube
+curl -sLo minikube https://storage.googleapis.com/minikube/releases/v${KUBERNETES_VERSION}/minikube-linux-amd64 2>/dev/null
+chmod +x minikube
+sudo cp minikube /usr/local/bin && rm minikube
+
+# Start minikube with no vm driver, dynamic audit enabled
+minikube start --driver=none \
+  --apiserver-ips 127.0.0.1 \
+  --apiserver-name localhost
+  # --feature-gates=DynamicAuditing=true \
+  # --extra-config=apiserver.audit-dynamic-configuration=true \
+  # --extra-config=apiserver.runtime-config=auditregistration.k8s.io/v1alpha1
+
+# Assign kubeconfig 
+sudo cp -R /root/.kube /root/.minikube /home/vagrant/
+sudo chown -R vagrant /root/.kube /root/.minikube /root /home/vagrant/.kube
+
+
+
 
 
 
@@ -233,12 +289,17 @@ chmod 700 get_helm.sh
 
 
 # NODE
+NODE_MAJOR_VERSION="18"
+
 
 # node.js
-# add a source file for the official Node.js 16.x LTS repo, grab the signing key and will run apt update
-curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+# add a source file for the official Node.js LTS repo, grab the signing key and will run apt update
+curl -sL https://deb.nodesource.com/setup_${NODE_MAJOR_VERSION}.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
+
+
+# TOOLS WITHOUT CONFIGURATION
 
 
 
@@ -247,9 +308,6 @@ npm install -g jwt-cli
 
 # CDK cloud development toolkit
 npm install -g aws-cdk
-
-
-# TOOLS WITHOUT CONFIGURATION
 
 
 # java
@@ -264,22 +322,9 @@ apt-get install -y zip
 apt-get install -y golang-go
 
 
-# tool for reading jason in console
+# tool for reading JSON in console
 apt-get install -y jq
 
-
-# install brew
-apt-get install -y linuxbrew-wrapper
-
-# refresh session
-su - $USER
-
-
-
-
-
-
-# MAVEN
 
 # maven
 apt-get install -y maven
@@ -376,15 +421,15 @@ chown -R vagrant:vagrant /home/vagrant/.gradle
 
 # add git authentication
 git config --global user.name "user.name"
-git config --global user.email "user.name@siemens.com"
+git config --global user.email "user.name@privategitlabrepo.com"
 git config -l
 
 cp /root/.gitconfig /home/vagrant/
 chown vagrant:vagrant /home/vagrant/.gitconfig
 
 
-#### add code.siemens.com to the known_hosts
-ssh-keyscan code.siemens.com >> /home/vagrant/.ssh/known_hosts
+#### add code.privategitlabrepo.com to the known_hosts
+# ssh-keyscan code.privategitlabrepo.com >> /home/vagrant/.ssh/known_hosts
 
 # the rights of the gitlab.key should be restricted to the vagrant used
 sudo chown -R vagrant:vagrant /home/vagrant/.ssh
@@ -398,21 +443,20 @@ echo -e "# Handle line endings automatically for files detected as text\n* text=
 
 
 
-# ANSIBLE
+# ANSIBLE - configure some example hosts for ansible
 
 mkdir -p /etc/ansible/
 touch  /etc/ansible/hosts
 touch  /etc/ansible/ansible.cfg
 
 
-
 # sudo apt-add-repository -y ppa:ansible/ansible
 # sudo apt-get -y update
 # sudo apt-get -y install ansible
-# configure some example hosts for ansible
+
 echo -e "[local]\n127.0.0.1   ansible_connection=local \n" >> /etc/ansible/hosts # add hosts
 
-# use the ec2key.priv.openssh.ppk, which is the default key on our project
+# use the ec2key.priv.openssh.ppk, which is the default key for Ec2 machines on the example project
 echo -e "[aws]\n52.17.66.234 ansible_user=ubuntu ansible_ssh_private_key_file=/home/vagrant/.ssh/ec2key.priv.openssh.ppk\n" >> /etc/ansible/hosts # add hosts
 sed -i 's/.*pipelining = False.*/pipelining = True/' /etc/ansible/ansible.cfg # reconfigure ansible
 sed -i 's/.*allow_world_readable_tmpfiles.*/allow_world_readable_tmpfiles= True/' /etc/ansible/ansible.cfg
@@ -420,8 +464,7 @@ sed -i 's/.*retry_files_enabled =.*/retry_files_enabled = False/' /etc/ansible/a
 
 # ansible
 # IAC reqruies ansible >= Version 2.4
-sudo -H pip3 install ansible==2.9
-
+sudo python3 -m pip install --user ansible
 
 
 
@@ -432,9 +475,10 @@ sudo -H pip3 install ansible==2.9
 # TERRAFORM
 apt-get install -y unzip
 
-# IAC reqruies ansible >= Version 0.9
-wget --quiet https://releases.hashicorp.com/terraform/0.15.5/terraform_0.15.5_linux_amd64.zip
-unzip terraform_0.15.5_linux_amd64.zip
+TERRAFORM_VERSION=1.3.6
+
+wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
+unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip
 sudo mv -f terraform /usr/local/bin/
 
 
