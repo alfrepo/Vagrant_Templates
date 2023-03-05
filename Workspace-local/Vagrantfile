@@ -56,6 +56,8 @@ Vagrant.configure("2") do |config|
     config.vm.network "forwarded_port", guest: 8080, host: 8080 # typical web apps
     config.vm.network "forwarded_port", guest: 27017, host: 27017 # mongodb
     config.vm.network "forwarded_port", guest: 8081, host: 8081 # mongo-express
+    config.vm.network "forwarded_port", guest: 31111, host: 31111 # kubernetes-book frontend
+    config.vm.network "forwarded_port", guest: 30000, host: 30000 # kubernetes-book backend
 
     # make the root disk available
     config.vm.synced_folder "c:/", "//mnt/c/"
