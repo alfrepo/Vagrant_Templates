@@ -90,6 +90,17 @@ sdk install java 19.0.2-open < /dev/null
 
 
 
+##################################################################################################################################
+# AWS CLI
+
+echo ""
+echo "##### installing aws #####"
+echo ""
+curl -sL  https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip
+unzip -qq awscliv2.zip
+sudo ./aws/install
+rm awscliv2.zip
+rm -rf aws
 
 
 
@@ -171,17 +182,6 @@ sudo -H pip3 install --upgrade pip
 su - $USER
 
 
-# awscli
-pip3 install awscli
-
-
-# for some reason only the installation for a user works fine.
-# sam https://itnext.io/creating-aws-lambda-applications-with-sam-dd13258c16dd
-# install sam for the user "$MYUSER"
-sudo -H -u $MYUSER bash -c 'pip3 install --user aws-sam-cli'
-
-# install sam for the user "root"
-sudo pip3 install --user aws-sam-cli
 
 # adding to the path
 sudo echo "PATH=$RHOME/.local/bin:$PATH" >> $RHOME/.bashrc
