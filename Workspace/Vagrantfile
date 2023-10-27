@@ -13,6 +13,9 @@ Vagrant.configure("2") do |config|
 
     PATH_VAGRANT_PROJECT=File.dirname(__FILE__)
 
+	config.vm.provision "file", source: "#{PATH_VAGRANT_PROJECT}\\.aws\\config", destination: "/home/vagrant/.aws/config"
+	config.vm.provision "file", source: "#{PATH_VAGRANT_PROJECT}\\.aws\\config", destination: "/home/root/.aws/config"
+
     config.ssh.insert_key = false
 
 	config.vm.network "public_network"
