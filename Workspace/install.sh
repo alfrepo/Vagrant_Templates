@@ -73,13 +73,13 @@ echo "source ~/.sdkman/bin/sdkman-init.sh" >> ~/.bashrc
 
 
 # gradle
-sdk install gradle 8.0.2  < /dev/null
+sdk install gradle 8.4  < /dev/null
 
 # maven
 sdk install maven < /dev/null
 
 # springboot
-sdk install springboot 3.0.4 < /dev/null
+sdk install springboot 3.1.5 < /dev/null
 
 
 # java open GraalVM from liberica "native image kit"
@@ -139,7 +139,7 @@ su - $USER
 
 
 # NODE
-NODE_MAJOR_VERSION="18"
+NODE_MAJOR_VERSION="20"
 
 
 # node.js
@@ -284,7 +284,7 @@ sudo python3 -m pip install --user ansible
 # TERRAFORM
 apt-get install -y unzip
 
-TERRAFORM_VERSION=1.3.6
+TERRAFORM_VERSION=1.6.2
 
 wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
 unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip
@@ -360,9 +360,9 @@ sudo systemctl restart docker
 # DOCKER COMPOSE
 
 # Docker-compose
-COMPOSE_VERSION="2.3.3"
+COMPOSE_VERSION="v2.23.0"
 
-sudo curl -L "https://github.com/docker/compose/releases/download/v2.12.2/docker-compose-$(uname -s)-$(uname -m)"  -o /usr/local/bin/docker-compose
+sudo curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)"  -o /usr/local/bin/docker-compose
 sudo mv /usr/local/bin/docker-compose /usr/bin/docker-compose
 sudo chmod +x /usr/bin/docker-compose
 
@@ -396,7 +396,7 @@ rm ./get_helm.sh
 # MINIKUBE
 
 # Minikube Variables
-KUBERNETES_VERSION="1.23.2"
+KUBERNETES_VERSION="1.31.2"
 
 
 
