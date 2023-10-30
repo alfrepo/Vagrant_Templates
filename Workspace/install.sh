@@ -108,7 +108,7 @@ sdk install springboot 3.1.5 < /dev/null
 sdk install java 22.2.r17-nik < /dev/null
 
 # java openjdk
-sdk install java 19.0.2-open < /dev/null
+sdk install 21-librca < /dev/null
 
 
 
