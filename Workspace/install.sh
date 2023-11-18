@@ -210,12 +210,35 @@ pip3 install awscli
 # install sam for the user "$MYUSER"
 sudo -H -u $MYUSER bash -c 'pip3 install --user aws-sam-cli'
 
+
+
+# eksctl - is a simple CLI tool for creating and managing clusters on EKS - Amazon's managed Kubernetes service for EC2
+# for ARM systems, set ARCH to: `arm64`, `armv6` or `armv7`
+ARCH=amd64
+PLATFORM=$(uname -s)_$ARCH
+
+curl -sLO "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$PLATFORM.tar.gz"
+
+# (Optional) Verify checksum
+curl -sL "https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_checksums.txt" | grep $PLATFORM | sha256sum --check
+
+tar -xzf eksctl_$PLATFORM.tar.gz -C /tmp && rm eksctl_$PLATFORM.tar.gz
+
+sudo mv /tmp/eksctl /usr/local/bin
+
+
+
+
+
 # install sam for the user "root"
 sudo pip3 install --user aws-sam-cli
 
 # adding to the path
 sudo echo "PATH=$RHOME/.local/bin:$PATH" >> $RHOME/.bashrc
 sudo echo "PATH=$VHOME/.local/bin:$PATH" >> $VHOME/.bashrc
+
+
+
 
 
 
@@ -407,6 +430,8 @@ curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key 
 echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
 sudo apt-get update -y
 sudo apt-get install -y kubectl
+
+
 
 
 
