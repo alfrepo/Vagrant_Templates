@@ -74,6 +74,8 @@ npm install -g aws-cdk
 # tool for reading JSON in console
 apt-get install -y jq
 
+# azure cli
+curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 
 # no sdkman installer
 # go
@@ -95,20 +97,20 @@ echo "source ~/.sdkman/bin/sdkman-init.sh" >> ~/.bashrc
 
 
 # gradle
-sdk install gradle 8.4  < /dev/null
+sdk install gradle 8.7  < /dev/null
 
 # maven
 sdk install maven < /dev/null
 
 # springboot
-sdk install springboot 3.1.5 < /dev/null
+sdk install springboot 3.2.4 < /dev/null
 
 
 # java open GraalVM from liberica "native image kit"
-sdk install java 22.2.r17-nik < /dev/null
+sdk install java 23.1.2.r21-nik < /dev/null
 
 # java openjdk
-sdk install 21-librca < /dev/null
+sdk install 22-librca < /dev/null
 
 
 
@@ -337,7 +339,7 @@ sudo python3 -m pip install --user ansible
 # TERRAFORM
 apt-get install -y unzip
 
-TERRAFORM_VERSION=1.6.2
+TERRAFORM_VERSION=1.8.0
 
 wget https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
 unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip
@@ -413,7 +415,7 @@ sudo systemctl restart docker
 # DOCKER COMPOSE
 
 # Docker-compose
-COMPOSE_VERSION="v2.23.0"
+COMPOSE_VERSION="v2.26.1"
 
 sudo curl -L "https://github.com/docker/compose/releases/download/${COMPOSE_VERSION}/docker-compose-$(uname -s)-$(uname -m)"  -o /usr/local/bin/docker-compose
 sudo mv /usr/local/bin/docker-compose /usr/bin/docker-compose
@@ -425,11 +427,16 @@ sudo chmod +x /usr/bin/docker-compose
 
 
 # Kubectl
-sudo apt-get update -y && sudo apt-get install -y apt-transport-https gnupg2
-curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
-sudo apt-get update -y
-sudo apt-get install -y kubectl
+
+#sudo apt-get update -y && sudo apt-get install -y apt-transport-https gnupg2
+#curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+#echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
+
+#echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.28/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+#curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.28/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+#sudo apt-get update -y
+#sudo apt-get install -y kubectl
 
 
 
@@ -443,6 +450,14 @@ chmod 700 get_helm.sh
 rm ./get_helm.sh
 
 
+
+
+# give the home permissions back to vagrant 
+# without that -  /home/vagrant is owned by root. 
+# and also /home/vagrant/.ssh/authorized_keys
+# so that no ssh connection works and 
+# vagrant ssh - failes with "Error: Authentication failure. Retrying..."
+sudo chown -R vagrant:vagrant "/home/$MYUSER"
 
 
 
@@ -462,6 +477,15 @@ sudo apt-get install -y conntrack
 
 ## /usr/sbin/iptables needs to be in path for minikube driver=none
 export PATH=$PATH:/usr/sbin/
+
+
+# install crictl
+# fix Sorry, Kubernetes 1.27.4 requires crictl to be installed in root's path
+wget https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.26.0/crictl-v1.26.0-linux-amd64.tar.gz -O /tmp/crictl.tar.gz
+sudo tar zxvf /tmp/crictl.tar.gz -C /usr/local/bin
+crictl --version
+
+
 
 # Install minikube
 curl -sLo minikube https://storage.googleapis.com/minikube/releases/v${KUBERNETES_VERSION}/minikube-linux-amd64 2>/dev/null
@@ -484,3 +508,5 @@ sudo chown -R $MYUSER $RHOME/.kube $RHOME/.minikube $RHOME $VHOME/.kube
 
 
 ######################################### 2
+
+
